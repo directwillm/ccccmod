@@ -1,0 +1,10 @@
+{
+	"name": "Cross Code Crowd Control",
+	"main": "mod.js",
+	"version": "0.0.1",
+	"description": "A mod aiming to enable crowd control twitch features",
+	"ccmodDependencies": {
+		"ccloader": "^2.11.0",
+		"crosscode": "^1.3.X"
+	}
+}
