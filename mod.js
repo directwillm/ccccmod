@@ -5,7 +5,8 @@ var currentLaserTime = 0;
 var currentIceTime = 0;
 var laser;
 var timeDif;
-const ORIGINAL_NG = sc.newgame.active;
+const ORIGINAL_NG = null;
+var iceStart = false;
 
 setInterval(function()
 {
@@ -96,9 +97,12 @@ function ice() {
 		sc.newgame.options["ice-physics"] = false;
 		sc.newgame.active = ORIGINAL_NG;
 		currentIceTime = 0;
+		ORIGINAL_NG = null;
 		return;
 	}
-	
+	if(!ORIGINAL_NG) {
+		ORIGINAL_NG = sc.newgame.active;
+	}
 	sc.newgame.active = true;
 	sc.newgame.options["ice-physics"] = true;
 	currentIceTime-=timeDif;
