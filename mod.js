@@ -1,11 +1,15 @@
 var currentCommands = [];
 var d = new Date();
 var lastTime = d.getTime();
-var currentLaserTime = 0;
-var currentIceTime = 0;
+var timers {
+	laser: 0,
+	ice: 0,
+	bombTime: 0,
+	hiGrav: 0,
+};
 var laser;
 var timeDif;
-const ORIGINAL_NG = null;
+var ORIGINAL_NG = null;
 var iceStart = false;
 
 setInterval(function()
@@ -18,14 +22,15 @@ setInterval(function()
 		if (this.readyState == 4 && this.status == 200) 
 		{
 			var commands = JSON.parse(this.responseText);
-			console.log(this.responseText);
+			//console.log(this.responseText);
 			
 			if (commands === undefined || commands.length ==0)
 			{
-				console.log("no commands");
+				//console.log("no commands");
 			}
 			else
 			{
+				console.log(commands);
 				currentCommands = currentCommands.concat(commands);
 			}
 			
@@ -36,7 +41,7 @@ setInterval(function()
 	};
 	xhttp.open("GET", "http://localhost:8080/api/nextCommands", true);
 	xhttp.send();
-}, 5000);
+}, 1000);
 
 //10 times a second to make sure we waste
 //little time if a timer is going but a room
@@ -44,7 +49,10 @@ setInterval(function()
 setInterval(()=>runTimers(),100);
 
 function processCommands(){
-	//Obviously don't run anything under these scenarios
+	//Obviously don't run anything under these scenarios:
+	//Game isnt loaded
+	//player doesnt exist yet
+	//player has ceased to exist
 	if (!ig.game || !ig.game.playerEntity || ig.game.playerEntity._killed == true) 
 	{
 		console.log("no player yet");
@@ -58,11 +66,11 @@ function processCommands(){
 		//or they are _killed (like when we go to the main menu
 		if (!ig.game.playerEntity || ig.game.playerEntity._killed == true) 
 		{
-			console.log("no player yet");
+			//console.log("no player yet");
 			return;
 		}
 		
-		console.log(e);
+		//console.log(e);
 		switch(e.command) 
 		{
 			case "hurt 10":
@@ -75,14 +83,20 @@ function processCommands(){
 				instantOverload();
 				break;
 			case "laser":
-				//30 seconds set.  Timers will all just be
-				//adjusting a variable.  #TODO make them all under a
-				//more generic timers object.  Not allowed
-				//to add another timer thing until you do that me!
-				currentLaserTime=15000;
+				//15 seconds set.  Timers will all just be
+				//adjusting a variable.  runTimers() will take care of
+				//everything else
+				timers.laser=15000;
 				break;
 			case "ice":
-				currentIceTime=15000;
+				timers.ice=15000;
+				break;
+			case "sandwich":
+				sandwich();
+				break;
+			case "hiGrav":
+				timers.hiGrav=15000;
+				break;
 			default:
 				console.log("unknown command");
 		}
@@ -90,26 +104,43 @@ function processCommands(){
 	currentCommands = [];
 }
 
+function sandwich() {
+	sc.model.player.addItem(1,1,false,false);
+	ig.game.playerEntity.useItem(1);
+}
+
 function ice() {
-	if(currentIceTime<=0 && !sc.newgame.options["ice-physics"]) {
+	if(timers.ice<=0 && !sc.newgame.options["ice-physics"]) {
 		return;
-	} else if (currentIceTime<=0 && sc.newgame.options["ice-physics"]) {
+	} else if (timers.ice<=0 && sc.newgame.options["ice-physics"]) {
 		sc.newgame.options["ice-physics"] = false;
 		sc.newgame.active = ORIGINAL_NG;
-		currentIceTime = 0;
+		timers.ice = 0;
 		return;
 	}
 	sc.newgame.active = true;
 	sc.newgame.options["ice-physics"] = true;
-	currentIceTime-=timeDif;
+	timers.ice-=timeDif;
 }
 
 function lowGrav() {
-	
+	//#todo: copy paste and change a few vars from hiGrav
 }
 
 function hiGrav() {
+	if(timers.hiGrav<=0 && ig.game.gravity == 800) {
+		return;
+	} //this else checks if its greater so it doesnt reset a low grav effect
+	else if (timers.hiGrav<=0 && ig.game.gravity > 800) {
+		ig.game.gravity = 800;
+		timers.hiGrav = 0;
+		return;
+	}
 	
+	//perfectly troll calibrated to still allow sometimes going up
+	//but still being super annoying
+	ig.game.gravity = 1068; 
+	timers.hiGrav-=timeDif;
 }
 
 function runTimers() {
@@ -123,19 +154,31 @@ function runTimers() {
 	}
 	var d = new Date();
 	timeDif = d.getTime()-lastTime;
-	if (ig.game && !ig.loading && !ig.game.paused && ig.game.playerEntity && ig.game.playerEntity._killed == false) {
-		laserTimer();
+	
+	//Dont run/decrement timers if:
+	//focus is lost
+	//game does not exist
+	//game is loading
+	//game is paused
+	//player doesnt exit
+	//player entity is destroyed (not kileld in game, but really _killed)
+	if (!ig.system.hasFocusLost() && ig.game && !ig.loading && !ig.game.paused && ig.game.playerEntity && ig.game.playerEntity._killed == false) {
+		laserr();
 		ice();
+		lowGrav();
+		hiGrav(); //high gravity will overwrite lowGrav if its active
 	}
 	
-	
+	//still update last time since run no matter what
+	//lest the time decrement gets buffered and make the
+	//previous state checks pointless
 	lastTime=d.getTime();
 }
 
-function laserTimer() {
-	if(currentLaserTime<=0 && !laser) {
+function laserr() {
+	if(timers.laser<=0 && !laser) {
 		return;
-	} else if (currentLaserTime<=0 && laser) {
+	} else if (timers.laser<=0 && laser) {
 		laser.kill();
 		laser = null;
 		return;
@@ -144,11 +187,11 @@ function laserTimer() {
 	if(!laser || laser._killed){
 		spawnLaser();
 		//To counteract the timeDif including the latest timedif right as it spawns
-		currentLaserTime+=timeDif;
+		timers.laser+=timeDif;
 	}
-	currentLaserTime-=timeDif;
-	if (currentLaserTime < 0) {
-		currentLaserTime = 0;
+	timers.laser-=timeDif;
+	if (timers.laser < 0) {
+		timers.laser = 0;
 	}
 	
 }
