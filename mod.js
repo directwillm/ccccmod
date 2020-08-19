@@ -97,11 +97,7 @@ function ice() {
 		sc.newgame.options["ice-physics"] = false;
 		sc.newgame.active = ORIGINAL_NG;
 		currentIceTime = 0;
-		ORIGINAL_NG = null;
 		return;
-	}
-	if(!ORIGINAL_NG) {
-		ORIGINAL_NG = sc.newgame.active;
 	}
 	sc.newgame.active = true;
 	sc.newgame.options["ice-physics"] = true;
@@ -117,6 +113,14 @@ function hiGrav() {
 }
 
 function runTimers() {
+	//Before anything that changes the NG can run, we see if it's null
+	//if it is then we can fill it with the current NG status
+	//ultimately if the game is saved while NG is active it's borked
+	//anyways so it might be better to just say "This mod makes your game NG+"
+	//and leave it at that
+	if (!ORIGINAL_NG) {
+		ORIGINAL_NG = sc.newgame.active;
+	}
 	var d = new Date();
 	timeDif = d.getTime()-lastTime;
 	if (ig.game && !ig.loading && !ig.game.paused && ig.game.playerEntity && ig.game.playerEntity._killed == false) {
