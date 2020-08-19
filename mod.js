@@ -2,8 +2,10 @@ var currentCommands = [];
 var d = new Date();
 var lastTime = d.getTime();
 var currentLaserTime = 0;
+var currentIceTime = 0;
 var laser;
 var timeDif;
+const ORIGINAL_NG = sc.newgame.active;
 
 setInterval(function()
 {
@@ -76,7 +78,10 @@ function processCommands(){
 				//adjusting a variable.  #TODO make them all under a
 				//more generic timers object.  Not allowed
 				//to add another timer thing until you do that me!
-				currentLaserTime=30000;
+				currentLaserTime=15000;
+				break;
+			case "ice":
+				currentIceTime=15000;
 			default:
 				console.log("unknown command");
 		}
@@ -84,11 +89,35 @@ function processCommands(){
 	currentCommands = [];
 }
 
+function ice() {
+	if(currentIceTime<=0 && !sc.newgame.options["ice-physics"]) {
+		return;
+	} else if (currentIceTime<=0 && sc.newgame.options["ice-physics"]) {
+		sc.newgame.options["ice-physics"] = false;
+		sc.newgame.active = ORIGINAL_NG;
+		currentIceTime = 0;
+		return;
+	}
+	
+	sc.newgame.active = true;
+	sc.newgame.options["ice-physics"] = true;
+	currentIceTime-=timeDif;
+}
+
+function lowGrav() {
+	
+}
+
+function hiGrav() {
+	
+}
+
 function runTimers() {
 	var d = new Date();
 	timeDif = d.getTime()-lastTime;
 	if (ig.game && !ig.loading && !ig.game.paused && ig.game.playerEntity && ig.game.playerEntity._killed == false) {
 		laserTimer();
+		ice();
 	}
 	
 	
