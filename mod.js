@@ -1,7 +1,10 @@
+//IDEA FROM EBILKILL: CD Cost for different commands
+
+
 var currentCommands = [];
 var d = new Date();
 var lastTime = d.getTime();
-var timers {
+var timers = {
 	laser: 0,
 	ice: 0,
 	bombTime: 0,
@@ -89,13 +92,13 @@ function processCommands(){
 				timers.laser=15000;
 				break;
 			case "ice":
-				timers.ice=15000;
+				timers.ice=30000;
 				break;
 			case "sandwich":
 				sandwich();
 				break;
 			case "hiGrav":
-				timers.hiGrav=15000;
+				timers.hiGrav=30000;
 				break;
 			default:
 				console.log("unknown command");
@@ -154,6 +157,10 @@ function runTimers() {
 	}
 	var d = new Date();
 	timeDif = d.getTime()-lastTime;
+	//still update last time since run no matter what
+	//lest the time decrement gets buffered and make the
+	//state checks below pointless
+	lastTime=d.getTime();
 	
 	//Dont run/decrement timers if:
 	//focus is lost
@@ -169,10 +176,7 @@ function runTimers() {
 		hiGrav(); //high gravity will overwrite lowGrav if its active
 	}
 	
-	//still update last time since run no matter what
-	//lest the time decrement gets buffered and make the
-	//previous state checks pointless
-	lastTime=d.getTime();
+	
 }
 
 function laserr() {
